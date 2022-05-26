@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 /**
  * @title Tic-tac-toe game
  * @author Anton Malko
  * @notice You can use this contract to play tic-tac-toe with your friends
  * @dev All function calls are currently implemented without side effects
  */
-contract TicTacToeGame {
+contract TicTacToeGame is IERC20 {
     uint256 public id = 0;
     uint256 public period = 2 days;
     uint256 public percent = 10;
@@ -169,9 +171,10 @@ contract TicTacToeGame {
      * @notice This feature replenishes the player's balance
      * @param _amount Amount of ether to be transferred
      */
-    function coin(uint256 _amount) external {
+    function coin(uint256 _amount, address _add) external {
         require(_amount < 1e60, "Invalid amount");
-        balance[msg.sender] += _amount;
+        IERC20.approve(msg.sender, _amount);
+        IERC20.transferFrom(msg.sender, _add, _amount);
     }
 
     /**
@@ -553,6 +556,19 @@ contract TicTacToeGame {
         returns (Player memory) 
     {
         return players[msg.sender];
+    }
+
+    /**
+     * @notice This function returns the player's balance
+     * @dev Returns the player's balance
+     * @return uint256
+     */
+    function getBalancePlayer() 
+        external
+        view 
+        returns (uint256)
+    {
+        return balance[msg.sender];
     }
 
     /**

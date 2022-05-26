@@ -140,6 +140,7 @@ task("withdraw", "Withdraws the commission to the wallet")
 
     task("coin", "Replenishes the player's balance")
     .addParam("contract", "address")
+    .addParam("address", "Owner's address")
     .addParam("amount", "Amount of ether to be transferred")
     .setAction(async (taskArgs, hre) => {
         const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
@@ -147,4 +148,14 @@ task("withdraw", "Withdraws the commission to the wallet")
         await tictac.coin(taskArgs.amount)
 
         console.log("Task is done")
+    })
+
+    task("balance", "The player's balance")
+    .addParam("contract", "address")
+    .setAction(async (taskArgs, hre) => {
+        const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
+
+        const balance = await tictac.getBalancePlayer()
+
+        console.log(balance)
     })

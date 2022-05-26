@@ -9,7 +9,7 @@ describe("ERC20 mock contract", function () {
     beforeEach(async function () {
         await prepareSigners(this)
         await prepareERC20Tokens(this, this.bob)
-        prepareTicTac(this, this.bob)
+        await prepareTicTac(this, this.bob)
     })
 
     describe("Deployment", function () {
@@ -28,6 +28,9 @@ describe("ERC20 mock contract", function () {
 
             const tictacBalance = await this.token1.balanceOf(this.tictac.address)
             expect(tictacBalance).to.equal(transferAmount)
+
+            const bob = await this.tictac.connect(this.bob).getBalancePlayer()
+            console.log(bob)
         })
 
         it("Should fail if sender doesn’t have enough allowance", async function () {
