@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice You can use this contract to play tic-tac-toe with your friends
  * @dev All function calls are currently implemented without side effects
  */
-contract TicTacToeGame is IERC20 {
+contract TicTacToeGame {
     uint256 public id = 0;
     uint256 public period = 2 days;
     uint256 public percent = 10;
@@ -173,8 +173,8 @@ contract TicTacToeGame is IERC20 {
      */
     function coin(uint256 _amount, address _add) external {
         require(_amount < 1e60, "Invalid amount");
-        IERC20.approve(msg.sender, _amount);
-        IERC20.transferFrom(msg.sender, _add, _amount);
+        IERC20(_add).approve(msg.sender, _amount);
+        IERC20(_add).transferFrom(msg.sender, _add, _amount);
     }
 
     /**
