@@ -1,9 +1,9 @@
 # Tic-Tac-Toe Game
 
-Etherscan: https://rinkeby.etherscan.io/address/0x99bfca09E7b85965661921e3069fC07a1B12aFa8#code
-Etherscan: https://rinkeby.etherscan.io/address/0xde1FE614d04a49Dc2231feBf555Fc9Cc3A9485A1#code
-Etherscan: https://rinkeby.etherscan.io/address/0xAAA752c45383eEEEDAa09E0981C85A3Df338F0A2#code
-Basic implementation of the game tic-tac-toe with test.
+Etherscan: https://rinkeby.etherscan.io/address/0x99bfca09E7b85965661921e3069fC07a1B12aFa8#code                                                                         
+Etherscan: https://rinkeby.etherscan.io/address/0xde1FE614d04a49Dc2231feBf555Fc9Cc3A9485A1#code                                                                         
+Etherscan: https://rinkeby.etherscan.io/address/0xAAA752c45383eEEEDAa09E0981C85A3Df338F0A2#code                                                                         
+Tic-tac-toe game with the ability to place bets with test.
 
 ## This project has the following features
 
