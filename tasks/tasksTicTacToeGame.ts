@@ -12,6 +12,18 @@ task("create", "Create a game")
         console.log("Task is done")
     })
 
+task("createERC", "Create a game")
+    .addParam("contract", "address")
+    .addParam("time", "The time it takes to make a move")
+    .addParam("erc", "Bid")
+    .setAction(async (taskArgs, hre) => {
+        const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
+
+        await tictac.createGameERC20(taskArgs.time, taskArgs.erc)
+
+        console.log("Task is done")
+    })
+
 task("join", "Join the game")
     .addParam("contract", "address")
     .addParam("id", "Id of the game")
@@ -24,6 +36,17 @@ task("join", "Join the game")
         console.log("Task is done")
     })
 
+task("joinERC", "Join the game")
+    .addParam("contract", "address")
+    .addParam("id", "Id of the game")
+    .addParam("erc", "Bid")
+    .setAction(async (taskArgs, hre) => {
+        const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
+
+        await tictac.joinERC(taskArgs.id, taskArgs.erc)
+
+        console.log("Task is done")
+    })
 task("getStatPlayer", "Get player stats")
     .addParam("contract", "address")
     .setAction(async (taskArgs, hre) => {
@@ -111,6 +134,17 @@ task("withdraw", "Withdraws the commission to the wallet")
         const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
 
         await tictac.comisionChang(taskArgs.fee)
+
+        console.log("Task is done")
+    })
+
+    task("coin", "Replenishes the player's balance")
+    .addParam("contract", "address")
+    .addParam("amount", "Amount of ether to be transferred")
+    .setAction(async (taskArgs, hre) => {
+        const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
+
+        await tictac.coin(taskArgs.amount)
 
         console.log("Task is done")
     })

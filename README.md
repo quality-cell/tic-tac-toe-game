@@ -29,9 +29,9 @@ npx hardhat verify --network ropsten (address contract)
 
 ## Running tasks (Instead of brackets, insert what you need !!)
 
-npx hardhat create --network ropsten --contract (address contract) --time (waiting time)
+npx hardhat create --network ropsten --contract (address contract) --time (waiting time) --eth (bid)
 
-npx hardhat join --network ropsten --contract (address contract) --id (Id of the game)
+npx hardhat join --network ropsten --contract (address contract) --id (Id of the game) --eth (bid)
 
 npx hardhat move --network ropsten --contract (address contract) --cell (The number of the cell) --tictac (The element that the player walks) --id (Id of the game)
 
@@ -58,4 +58,8 @@ npx hardhat withdrawETH --network ropsten --contract (address contract) --amount
 npx hardhat withdrawETH --network ropsten --contract (address contract)
 
 
+npx hardhat createERC --network ropsten --contract (address contract) --time (waiting time) --erc (bid)
 
+npx hardhat joinERC --network ropsten --contract (address contract) --id (Id of the game) --erc (bid)
+
+npx hardhat coin --network ropsten --contract (address contract) --amount (Amount of ether to be transferred) --address (Owner's address)

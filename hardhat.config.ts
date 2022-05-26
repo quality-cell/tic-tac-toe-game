@@ -46,7 +46,6 @@ const config: HardhatUserConfig = {
     },
     networks: {
         hardhat: {
-            blockGasLimit: 100000000429720,
             accounts: {
                 mnemonic: process.env.MNEMONIC,
             },
@@ -82,7 +81,7 @@ const config: HardhatUserConfig = {
             url: "https://api.avax-test.network/ext/bc/C/rpc",
             gasMultiplier: 2,
             accounts: {
-                mnemonic: process.env.API_ALC,
+                mnemonic: process.env.MNEMONIC,
             },
         },
     },

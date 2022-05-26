@@ -56,6 +56,7 @@ contract TicTacToeGame {
 
     mapping(uint256 => Game) public games;
     mapping(address => Player) private players;
+    mapping(address => uint256) private balance;
 
     /**
      * @notice This event contains the data entered by the user, his address and game id
@@ -165,6 +166,49 @@ contract TicTacToeGame {
     }
 
     /**
+     * @notice This feature replenishes the player's balance
+     * @param _amount Amount of ether to be transferred
+     */
+    function coin(uint256 _amount) external {
+        require(_amount < 1e60, "Invalid amount");
+        balance[msg.sender] += _amount;
+    }
+
+    /**
+     * @notice This function creates a game with ERC20
+     * @dev You can set the waiting time the same for all
+     * @param _timeWait The time it takes to make a move
+     * @param _amount Amount of ether to be transferred
+     */
+    function createGameERC20(uint256 _timeWait, uint256 _amount) external {
+        require(balance[msg.sender] >= _amount && _amount > 0, "Invalid balance");
+
+        Game storage game = games[id];
+
+        game.status = GameStatus.created;
+        game.player1 = msg.sender;
+        game.timer = _timeWait;
+        balance[msg.sender] -= _amount;
+        game.money += _amount;
+        game.deadline = block.timestamp + period;
+        game.comision = game.money * percent / 100;
+
+        id++;
+
+        emit Player1(
+            game.player1, 
+            id - 1, 
+            game.timer,
+            game.money
+        );
+
+        emit Status(
+            id - 1,
+            game.status
+        );
+    }
+
+    /**
      * @notice This function creates a game
      * @dev You can set the waiting time the same for all
      * @param _timeWait The time it takes to make a move
@@ -192,6 +236,47 @@ contract TicTacToeGame {
 
         emit Status(
             id - 1,
+            game.status
+        );
+    }
+
+    /**
+     * @notice This function allows another player to join the game with ERC20
+     * @dev There is a modifier that checks that the game has already been created,
+     * also inside the function there is a check that the player
+     * who joins is not the player who created the game
+     * @param _id Id of the game created by player 1
+     * @param _amount Amount of ether to be transferred
+     */
+    function joinERC(uint256 _id, uint256 _amount) 
+        external 
+        atStatus(_id, GameStatus.created) 
+    {
+       require(balance[msg.sender] >= _amount && _amount > 0, "Invalid balance");
+        if (msg.sender == games[_id].player1) {
+            revert invalidAddress();
+        }
+
+        Game storage game = games[_id];
+
+        game.player2 = msg.sender;
+        game.status = GameStatus.started;
+        game.lastMove = block.timestamp;
+        game.lastPlayer = game.player2;
+        balance[msg.sender] -= _amount;
+        game.money += _amount;
+        game.comision = game.money * percent / 100;
+
+        
+        emit Player2(
+            game.player2, 
+            _id, 
+            game.timer,
+            _amount
+        );
+
+        emit Status(
+            _id,
             game.status
         );
     }
