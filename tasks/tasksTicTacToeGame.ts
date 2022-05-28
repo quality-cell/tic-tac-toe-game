@@ -12,14 +12,15 @@ task("create", "Create a game")
         console.log("Task is done")
     })
 
-task("createERC", "Create a game")
+task("createERC20", "Create a game")
     .addParam("contract", "address")
     .addParam("time", "The time it takes to make a move")
     .addParam("erc", "Bid")
+    .addParam("power", "ten to the power")
     .setAction(async (taskArgs, hre) => {
         const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
 
-        await tictac.createGameERC20(taskArgs.time, taskArgs.erc)
+        await tictac.createGameERC20(taskArgs.time, hre.ethers.utils.parseUnits(String(taskArgs.eth), taskArgs.power))
 
         console.log("Task is done")
     })
@@ -36,14 +37,15 @@ task("join", "Join the game")
         console.log("Task is done")
     })
 
-task("joinERC", "Join the game")
+task("joinERC20", "Join the game")
     .addParam("contract", "address")
     .addParam("id", "Id of the game")
     .addParam("erc", "Bid")
+    .addParam("power", "ten to the power")
     .setAction(async (taskArgs, hre) => {
         const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
 
-        await tictac.joinERC(taskArgs.id, taskArgs.erc)
+        await tictac.joinERC20(taskArgs.id, hre.ethers.utils.parseUnits(String(taskArgs.eth), taskArgs.power))
 
         console.log("Task is done")
     })
@@ -115,19 +117,53 @@ task("pickUpTheWinnings", "Withdraw winnings")
         console.log("Task is done")
     })
 
-task("withdraw", "Withdraws the commission to the wallet")
+task("pickUpTheWinningsERC20", "Withdraw winnings")
     .addParam("contract", "address")
     .addParam("id", "Id of the game")
-    .addParam("wallet", "Wallet address")
     .setAction(async (taskArgs, hre) => {
         const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
 
-        await tictac.withdraw(taskArgs.id, taskArgs.wallet)
+        await tictac.pickUpTheWinningsERC20(taskArgs.id)
 
         console.log("Task is done")
     })
 
-    task("comisionChang", "Changes the commission percentage")
+task("withdrawComission", "Withdraws the commission to the wallet")
+    .addParam("contract", "address")
+    .addParam("wallet", "Wallet address")
+    .setAction(async (taskArgs, hre) => {
+        const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
+
+        await tictac.withdraw(taskArgs.wallet)
+
+        console.log("Task is done")
+    })
+
+task("withdrawComissionERC20", "Withdraws the commission ERC20 to the wallet")
+    .addParam("contract", "address")
+    .addParam("wallet", "Wallet address")
+    .addParam("add", "Address contract with token ERC20")
+    .setAction(async (taskArgs, hre) => {
+        const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
+
+        await tictac.withdrawComissionERC20(taskArgs.wallet, taskArgs.add)
+
+        console.log("Task is done")
+    })
+
+task("withdrawERC20", "This function outputs ERC20")
+    .addParam("contract", "address")
+    .addParam("amount", "Amount of tokens to be transferred")
+    .addParam("add", "Address contract with token ERC20")
+    .setAction(async (taskArgs, hre) => {
+        const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
+
+        await tictac.withdrawComissionERC20(taskArgs.amount, taskArgs.add)
+
+        console.log("Task is done")
+    })
+
+task("comisionChang", "Changes the commission percentage")
     .addParam("contract", "address")
     .addParam("fee", "Game Commission")
     .setAction(async (taskArgs, hre) => {
@@ -138,19 +174,39 @@ task("withdraw", "Withdraws the commission to the wallet")
         console.log("Task is done")
     })
 
-    task("coin", "Replenishes the player's balance")
+task("refill", "Replenishes the player's balance")
     .addParam("contract", "address")
-    .addParam("address", "Owner's address")
+    .addParam("address", "Address contract with token ERC20")
     .addParam("amount", "Amount of ether to be transferred")
     .setAction(async (taskArgs, hre) => {
         const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
 
-        await tictac.coin(taskArgs.amount)
+        await tictac.refill(taskArgs.amount, taskArgs.address)
 
         console.log("Task is done")
     })
 
-    task("balance", "The player's balance")
+task("balanceComission", "Commission balance")
+    .addParam("contract", "address")
+    .setAction(async (taskArgs, hre) => {
+        const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
+
+        const balance = await tictac.getComission()
+
+        console.log(balance)
+    })
+
+task("balanceComissionERC20", "Commission balance ERC20")
+    .addParam("contract", "address")
+    .setAction(async (taskArgs, hre) => {
+        const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)
+
+        const balance = await tictac.getComissionERC20()
+
+        console.log(balance)
+    })
+
+ task("balancePlayer", "Player's balance")
     .addParam("contract", "address")
     .setAction(async (taskArgs, hre) => {
         const tictac = await hre.ethers.getContractAt("TicTacToeGame", taskArgs.contract)

@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 
 /**
  * @title Wallet
@@ -15,6 +17,7 @@ contract Wallet {
     address holder2;
     bool locked1 = true;
     bool locked2 = true;
+    uint256 balances;
 
     constructor(address _holder1, address _holder2) {
         holder1 = _holder1;
@@ -24,6 +27,38 @@ contract Wallet {
     receive() external payable {}
 
     fallback() external payable {}
+
+    /**
+     * @notice This feature replenishes the player's balance
+     * @param _amount Amount of ether to be transferred
+     * @param _add address contract with token ERC20
+     * @param _from Sender's address
+     */
+    function refill(uint256 _amount, address _add, address _from) external {
+        require(msg.sender == holder1 || msg.sender == holder2, "Invalid address");
+        require(_amount < 1e60, "Invalid amount");
+
+        IERC20(_add).transferFrom(_from, address(this), _amount);
+        balances += _amount;
+    }
+
+    /**
+     * @notice This function executes a transaction with ERC20
+     * @dev Inside the function there is a check that checks who is calling the function.
+     * and also checks if all addresses confirmed the transaction
+     * @param _amount Amount of ether to be transferred
+     * @param _add address contract with token ERC20
+     */
+    function withdrawERC20(uint256 _amount, address _add) external {
+        require(msg.sender == holder1 || msg.sender == holder2, "Invalid address");
+
+        if (locked1 == false && locked2 == false) {
+            balances -= _amount;
+            IERC20(_add).transfer(msg.sender, _amount);
+        } else {
+            revert("Invalid locked");
+        }
+    }
 
     /**
      * @notice This function confirms the execution of a transaction
@@ -76,6 +111,13 @@ contract Wallet {
      */
     function getBalance() external view returns (uint) {
         return address(this).balance;
+    }
+
+    /**
+     * @notice Returns wallet balance ERC20
+     */
+    function getBalanceERC20() external view returns (uint) {
+        return balances;
     }
 
     /**

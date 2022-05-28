@@ -1,7 +1,7 @@
 # Tic-Tac-Toe Game
 
-Etherscan: https://rinkeby.etherscan.io/address/0x99bfca09E7b85965661921e3069fC07a1B12aFa8#code                                                                         
-Etherscan: https://rinkeby.etherscan.io/address/0xde1FE614d04a49Dc2231feBf555Fc9Cc3A9485A1#code                                                                         
+Etherscan: https://rinkeby.etherscan.io/address/0xB63c88436b0c9c1a7efD60c87Bd95570c768A4b3#code                                                                        
+Etherscan: https://rinkeby.etherscan.io/address/0xB23E2494B18dCed9801Cdc5F5E9f5668Ef0EFA1B#code                                                                         
 Etherscan: https://rinkeby.etherscan.io/address/0xAAA752c45383eEEEDAa09E0981C85A3Df338F0A2#code                                                                         
 Tic-tac-toe game with the ability to place bets with test.
 
@@ -45,6 +45,8 @@ npx hardhat getStatGame --network ropsten --contract (address contract) --id (Id
 
 npx hardhat pickUpTheWinnings --network ropsten --contract (address contract) --id (Id of the game)
 
+npx hardhat pickUpTheWinningsERC20 --network ropsten --contract (address contract) --id (Id of the game)
+
 npx hardhat withdraw --network ropsten --contract (address contract) --id (Id of the game) --wallet (Wallet address)
 
 npx hardhat comisionChang --network ropsten --contract (address contract) --fee (Game Commission)
@@ -55,11 +57,29 @@ npx hardhat approve --network ropsten --contract (address contract) --amount (Am
 
 npx hardhat withdrawETH --network ropsten --contract (address contract) --amount (Amount of ether to be transferred) --address (Owner's address)
 
-npx hardhat withdrawETH --network ropsten --contract (address contract)
+npx hardhat withdrawComission --network ropsten --contract (address contract) --wallet (Wallet address)
+
+npx hardhat createERC20 --network ropsten --contract (address contract) --time (waiting time) --erc (bid)
+
+npx hardhat joinERC20 --network ropsten --contract (address contract) --id (Id of the game) --erc (bid)
+
+npx hardhat refill --network ropsten --contract (address contract) --amount (Amount of ether to be transferred) --address (Owner's address)
+
+npx hardhat withdrawComissionERC20 --network ropsten --contract (address contract) --wallet (Wallet address) --add (Address contract with token ERC20)
+
+npx hardhat balancePlayer --network ropsten --contract (address contract)
+
+npx hardhat balanceComissionERC20 --network ropsten --contract (address contract)
+
+npx hardhat balanceComission --network ropsten --contract (address contract)
+
+npx hardhat getBalance --network ropsten --contract (address contract)
+
+npx hardhat refillWallet --network ropsten --contract (address contract) --amount (Amount of ether to be transferred) --address (Owner's address) --from (Sender's address)
+
+npx hardhat withdrawETH --network ropsten --contract (address contract) --amount (Amount of ether to be transferred) --address (Owner's address)
+
+npx hardhat getBalanceERC20 --network ropsten --contract (address contract)
 
 
-npx hardhat createERC --network ropsten --contract (address contract) --time (waiting time) --erc (bid)
 
-npx hardhat joinERC --network ropsten --contract (address contract) --id (Id of the game) --erc (bid)
-
-npx hardhat coin --network ropsten --contract (address contract) --amount (Amount of ether to be transferred) --address (Owner's address)

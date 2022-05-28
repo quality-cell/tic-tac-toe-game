@@ -39,7 +39,7 @@ task("withdrawETH", "Transaction execution")
         console.log("Task is done")
 })
 
-task("getBalance", "Transaction execution")
+task("getBalance", "Wallet balance")
     .addParam("contract", "Сontract address")
     .setAction(async (taskArgs, hre) => {
         const wallet = await hre.ethers.getContractAt("Wallet", taskArgs.contract)
@@ -47,4 +47,39 @@ task("getBalance", "Transaction execution")
         const balance = await wallet.getBalance()
 
         console.log(balance)
+    })
+
+task("refillWallet", "Replenishes balance")
+    .addParam("contract", "address")
+    .addParam("address", "Address contract with token ERC20")
+    .addParam("amount", "Amount of ether to be transferred")
+    .addParam("from", "Sender's address")
+    .setAction(async (taskArgs, hre) => {
+        const wallet = await hre.ethers.getContractAt("Wallet", taskArgs.contract)
+
+        await wallet.refill(taskArgs.amount, taskArgs.address, taskArgs.from)
+
+        console.log("Task is done")
+    })
+
+    task("getBalanceERC20", "Wallet balance ERC20")
+    .addParam("contract", "Сontract address")
+    .setAction(async (taskArgs, hre) => {
+        const wallet = await hre.ethers.getContractAt("Wallet", taskArgs.contract)
+
+        const balance = await wallet.getBalanceERC20()
+
+        console.log(balance)
+    })
+
+    task("withdrawERC20", "Transaction execution")
+    .addParam("contract", "Сontract address")
+    .addParam("amount", "Amount of ether to be transferred")
+    .addParam("address", "Address contract with token ERC20")
+    .setAction(async (taskArgs, hre) => {
+        const wallet = await hre.ethers.getContractAt("Wallet", taskArgs.contract)
+
+        await wallet.withdrawERC20(taskArgs.amount, taskArgs.address)
+
+        console.log("Task is done")
 })

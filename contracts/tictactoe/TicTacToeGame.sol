@@ -14,6 +14,9 @@ contract TicTacToeGame {
     uint256 public period = 2 days;
     uint256 public percent = 10;
     address owner;
+    uint256 private comission;
+    uint256 private comissionERC20;
+
 
     enum TicTac {
         no,
@@ -24,6 +27,7 @@ contract TicTacToeGame {
     enum GameStatus {
         no,
         created,
+        createdERC20,
         started,
         finished
     }
@@ -41,6 +45,7 @@ contract TicTacToeGame {
         uint256 countMove;
         address lastPlayer;
         TicTac[9] fields;
+        bool erc20;
     }
 
     struct Player {
@@ -114,7 +119,7 @@ contract TicTacToeGame {
 
     /**
      * @notice This event contains the game id and its status
-     * @dev Called in the createGame, join, changeStat function
+     * @dev Called in the createGame, createGameERC20, join, joinERC20, changeStat function
      * @param id Id of the game
      * @param status The amount of funds transferred
      */
@@ -170,31 +175,34 @@ contract TicTacToeGame {
     /**
      * @notice This feature replenishes the player's balance
      * @param _amount Amount of ether to be transferred
+     * @param _add Address contract with token ERC20
      */
-    function coin(uint256 _amount, address _add) external {
+    function refill(uint256 _amount, address _add) external {
         require(_amount < 1e60, "Invalid amount");
-        IERC20(_add).approve(msg.sender, _amount);
-        IERC20(_add).transferFrom(msg.sender, _add, _amount);
+
+        IERC20(_add).transferFrom(msg.sender, address(this), _amount);
+        balance[msg.sender] += _amount;
     }
 
     /**
      * @notice This function creates a game with ERC20
      * @dev You can set the waiting time the same for all
      * @param _timeWait The time it takes to make a move
-     * @param _amount Amount of ether to be transferred
+     * @param _amount Number of tokens to transfer
      */
     function createGameERC20(uint256 _timeWait, uint256 _amount) external {
         require(balance[msg.sender] >= _amount && _amount > 0, "Invalid balance");
 
         Game storage game = games[id];
 
-        game.status = GameStatus.created;
+        game.status = GameStatus.createdERC20;
         game.player1 = msg.sender;
         game.timer = _timeWait;
         balance[msg.sender] -= _amount;
         game.money += _amount;
         game.deadline = block.timestamp + period;
         game.comision = game.money * percent / 100;
+        game.erc20 = true;
 
         id++;
 
@@ -249,11 +257,11 @@ contract TicTacToeGame {
      * also inside the function there is a check that the player
      * who joins is not the player who created the game
      * @param _id Id of the game created by player 1
-     * @param _amount Amount of ether to be transferred
+     * @param _amount Number of tokens to transfer
      */
-    function joinERC(uint256 _id, uint256 _amount) 
+    function joinERC20(uint256 _id, uint256 _amount) 
         external 
-        atStatus(_id, GameStatus.created) 
+        atStatus(_id, GameStatus.createdERC20) 
     {
        require(balance[msg.sender] >= _amount && _amount > 0, "Invalid balance");
         if (msg.sender == games[_id].player1) {
@@ -415,6 +423,37 @@ contract TicTacToeGame {
     }
 
     /**
+     * @notice The function credits the winnings to the balance of the winner in ERC20
+     * @dev There is a modifier that checks the address of the one who calls the function
+     * Also inside there is a check that checks what the bet was made in
+     * @param _id Id of the game
+     */
+    function pickUpTheWinningsERC20(uint256 _id) 
+        external 
+        addressPlayer(_id, msg.sender)
+    {
+        require(games[_id].erc20 == true, "Invalid func");
+        
+        Game storage game = games[_id];
+        uint256 amount = game.money;
+        uint256 comis = game.comision;
+
+        if(game.status == GameStatus.finished) {
+            if(game.winner == msg.sender) {
+                game.money = 0;
+                balance[msg.sender] += (amount - game.comision);
+            } else {
+                revert youAreNotWinner();
+            }
+        } else if(game.status == GameStatus.createdERC20 && block.timestamp > game.deadline ) {
+            game.money = 0;
+            balance[msg.sender] += (amount - game.comision);
+            game.comision = 0;
+            comissionERC20 += comis;
+        }
+    }
+
+    /**
      * @notice The function displays the winnings to the winner
      * @dev There is a modifier that checks the address of the one who calls the function
      * @param _id Id of the game
@@ -423,49 +462,73 @@ contract TicTacToeGame {
         external 
         addressPlayer(_id, msg.sender)
     {
-        Game storage game = games[_id];
+        require(games[_id].erc20 != true, "Invalid func");
 
-        if(games[_id].status == GameStatus.finished) {
+        Game storage game = games[_id];
+        uint256 amount = game.money;
+        uint256 comis = game.comision;
+
+        if(game.status == GameStatus.finished) {
             if(games[_id].winner == msg.sender) {
-                uint256 amount = game.money;
                 game.money = 0;
 
                 payable(msg.sender).transfer(amount - game.comision);
             } else {
                 revert youAreNotWinner();
             }
-        } else if(games[_id].status == GameStatus.created && block.timestamp > game.deadline ) {
-            uint256 amount = game.money;
+        } else if(game.status == GameStatus.created && block.timestamp > game.deadline ) {
             game.money = 0;
 
             payable(msg.sender).transfer(amount - game.comision);
+
+            game.comision = 0;
+            comission += comis;
         }
+    }
+
+    /**
+     * @notice This function outputs ERC20
+     * @param _amount Amount of tokens to be transferred
+     * @param _add address contract with token ERC20
+     */
+    function withdrawERC20(uint256 _amount, address _add) 
+        external 
+    {
+        require(balance[msg.sender] >= _amount,"Invalid balance");
+
+        balance[msg.sender] -= _amount;
+        IERC20(_add).transfer(msg.sender, _amount);
     }
 
     /**
      * @notice This function withdraws the commission to the wallet
      * @dev The function can only be called by the owner of the contract
-     * @param _id Id of the game
      * @param _wallet Wallet address
      */
-    function withdraw(uint256 _id, address _wallet) 
+    function withdraw(address payable _wallet) 
         external 
     {
         require(msg.sender == owner, "Invalid address");
+        uint256 amount = comission;
+        comission = 0;
 
-        Game storage game = games[_id];
+        _wallet.transfer(amount);
+    }
 
-        if(games[_id].status == GameStatus.finished) {
-            uint256 amount = game.comision;
-            game.comision = 0;
+    /**
+     * @notice This function withdraws the commission ERC20 to the wallet
+     * @dev The function can only be called by the owner of the contract
+     * @param _wallet Wallet address
+     * @param _add address contract with token ERC20
+     */
+    function withdrawComissionERC20(address _wallet, address _add) 
+        external 
+    {
+        require(msg.sender == owner, "Invalid address");
+        uint256 amount = comissionERC20;
+        comissionERC20 = 0;
 
-            payable(_wallet).transfer(amount);
-        } else if(games[_id].status == GameStatus.created && block.timestamp > game.deadline ) {
-            uint256 amount = game.comision;
-            game.comision = 0;
-
-            payable(_wallet).transfer(amount);
-        }
+        IERC20(_add).approve(_wallet, amount);
     }
 
     /**
@@ -477,6 +540,7 @@ contract TicTacToeGame {
         external 
     {
         require(msg.sender == owner, "Invalid address");
+        
         percent = _fee;
     }
 
@@ -499,6 +563,12 @@ contract TicTacToeGame {
 
         game.winner = game.player1;
         game.status = GameStatus.finished;
+
+        if (game.erc20 == true) {
+             comissionERC20 += game.comision;
+        } else {
+            comission += game.comision;
+        }
 
         emit Status(
             _id,
@@ -559,9 +629,38 @@ contract TicTacToeGame {
     }
 
     /**
+     * @notice Displays commission balance
+     * @dev Returns comission
+     * @return uint256 Comission
+     */
+    function getComission() 
+        external
+        view 
+        returns (uint256) 
+    {
+        require(msg.sender == owner, "Invalid address");
+
+        return comission;
+    }
+
+    /**
+     * @notice Displays commission balance ERC20
+     * @dev Returns comission ERC20
+     * @return uint256 Comission
+     */
+    function getComissionERC20() 
+        external
+        view 
+        returns (uint256) 
+    {
+        require(msg.sender == owner, "Invalid address");
+
+        return comissionERC20;
+    }
+
+    /**
      * @notice This function returns the player's balance
-     * @dev Returns the player's balance
-     * @return uint256
+     * @return uint256 balance
      */
     function getBalancePlayer() 
         external

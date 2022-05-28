@@ -173,7 +173,7 @@ describe("tictac", function () {
         player2 = await this.tictac.connect(this.misha).getStatPlayer()
         let game = await this.tictac.connect(this.misha).getStatGame(4)
 
-        expect(game.status).to.equal(2)
+        expect(game.status).to.equal(3)
         expect(player1.all).to.equal(4)
         expect(player1.los).to.equal(2)
         expect(player2.all).to.equal(4)
@@ -344,7 +344,7 @@ describe("tictac", function () {
         await this.tictac.connect(this.bob).gameFinished(0, 1)
         await this.tictac.connect(this.bob).pickUpTheWinnings(0)
 
-        await this.tictac.connect(this.bob).withdraw(0, this.wallet.address)
+        await this.tictac.connect(this.bob).withdraw(this.wallet.address)
 
         expect(await this.wallet.getBalance()).to.equal(ethers.utils.parseEther("0.02"))
         
@@ -352,9 +352,10 @@ describe("tictac", function () {
 
         increase(duration.minutes("4320"))
 
-        await expect(this.tictac.connect(this.misha).withdraw(1, this.wallet.address)).to.be.revertedWith("Invalid address")
+        await expect(this.tictac.connect(this.misha).withdraw(this.wallet.address)).to.be.revertedWith("Invalid address")
+        await this.tictac.connect(this.bob).pickUpTheWinnings(1)
 
-        await this.tictac.connect(this.bob).withdraw(1, this.wallet.address)
+        await this.tictac.connect(this.bob).withdraw(this.wallet.address)
 
         expect(await this.wallet.getBalance()).to.equal(ethers.utils.parseEther("0.02").add(ethers.utils.parseEther("0.01")))
 
@@ -476,7 +477,7 @@ describe("tictac", function () {
         
         await expect(join)
             .to.emit(this.tictac, "Status")
-            .withArgs(0, 2)
+            .withArgs(0, 3)
     })
 
     it("comisionChang", async function () {
