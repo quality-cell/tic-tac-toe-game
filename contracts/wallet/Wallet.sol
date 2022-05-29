@@ -19,6 +19,11 @@ contract Wallet {
     bool locked2 = true;
     uint256 balances;
 
+    /**
+     * @notice Specifies the owners of the contract
+     * @param _holder1 Owner's address 1
+     * @param _holder2 Owner's address 2
+     */
     constructor(address _holder1, address _holder2) {
         holder1 = _holder1;
         holder2 = _holder2;

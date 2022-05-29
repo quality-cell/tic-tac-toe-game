@@ -146,7 +146,6 @@ describe("ERC20 mock contract", function () {
             await this.wallet.connect(this.bob).withdrawERC20(ethers.utils.parseUnits("200", 4), this.token1.address)
 
             expect(await this.token1.balanceOf(this.bob.address)).to.equal(bobBalance1.add(ethers.utils.parseUnits("200", 4)))
-    
         })
 
         it("Should fail if sender doesn’t have enough allowance", async function () {

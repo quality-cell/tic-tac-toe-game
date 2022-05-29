@@ -17,7 +17,6 @@ contract TicTacToeGame {
     uint256 private comission;
     uint256 private comissionERC20;
 
-
     enum TicTac {
         no,
         zero,
@@ -37,7 +36,7 @@ contract TicTacToeGame {
         address winner;
         uint256 deadline;
         uint256 timer;
-        uint256 money;
+        uint256 amount;
         uint256 comision;
         uint256 lastMove;
         address player1;
@@ -128,10 +127,6 @@ contract TicTacToeGame {
         GameStatus indexed status
     );
 
-    constructor(address _owner) {
-        owner = _owner;
-    }
-
     modifier atStatus(uint256 _id, GameStatus _status) {
         Game storage game = games[_id];
 
@@ -173,6 +168,14 @@ contract TicTacToeGame {
     }
 
     /**
+     * @notice Specifies the owner of the contract
+     * @param _owner Owner's address
+     */
+    constructor(address _owner) {
+        owner = _owner;
+    }
+
+    /**
      * @notice This feature replenishes the player's balance
      * @param _amount Amount of ether to be transferred
      * @param _add Address contract with token ERC20
@@ -199,9 +202,9 @@ contract TicTacToeGame {
         game.player1 = msg.sender;
         game.timer = _timeWait;
         balance[msg.sender] -= _amount;
-        game.money += _amount;
+        game.amount += _amount;
         game.deadline = block.timestamp + period;
-        game.comision = game.money * percent / 100;
+        game.comision = game.amount * percent / 100;
         game.erc20 = true;
 
         id++;
@@ -210,7 +213,7 @@ contract TicTacToeGame {
             game.player1, 
             id - 1, 
             game.timer,
-            game.money
+            game.amount
         );
 
         emit Status(
@@ -232,9 +235,9 @@ contract TicTacToeGame {
         game.status = GameStatus.created;
         game.player1 = msg.sender;
         game.timer = _timeWait;
-        game.money += msg.value;
+        game.amount += msg.value;
         game.deadline = block.timestamp + period;
-        game.comision = game.money * percent / 100;
+        game.comision = game.amount * percent / 100;
 
         id++;
 
@@ -242,7 +245,7 @@ contract TicTacToeGame {
             game.player1, 
             id - 1, 
             game.timer,
-            game.money
+            game.amount
         );
 
         emit Status(
@@ -275,8 +278,8 @@ contract TicTacToeGame {
         game.lastMove = block.timestamp;
         game.lastPlayer = game.player2;
         balance[msg.sender] -= _amount;
-        game.money += _amount;
-        game.comision = game.money * percent / 100;
+        game.amount += _amount;
+        game.comision = game.amount * percent / 100;
 
         
         emit Player2(
@@ -315,8 +318,8 @@ contract TicTacToeGame {
         game.status = GameStatus.started;
         game.lastMove = block.timestamp;
         game.lastPlayer = game.player2;
-        game.money += msg.value;
-        game.comision = game.money * percent / 100;
+        game.amount += msg.value;
+        game.comision = game.amount * percent / 100;
 
         
         emit Player2(
@@ -435,18 +438,18 @@ contract TicTacToeGame {
         require(games[_id].erc20 == true, "Invalid func");
         
         Game storage game = games[_id];
-        uint256 amount = game.money;
+        uint256 amount = game.amount;
         uint256 comis = game.comision;
 
         if(game.status == GameStatus.finished) {
             if(game.winner == msg.sender) {
-                game.money = 0;
+                game.amount = 0;
                 balance[msg.sender] += (amount - game.comision);
             } else {
                 revert youAreNotWinner();
             }
         } else if(game.status == GameStatus.createdERC20 && block.timestamp > game.deadline ) {
-            game.money = 0;
+            game.amount = 0;
             balance[msg.sender] += (amount - game.comision);
             game.comision = 0;
             comissionERC20 += comis;
@@ -465,19 +468,19 @@ contract TicTacToeGame {
         require(games[_id].erc20 != true, "Invalid func");
 
         Game storage game = games[_id];
-        uint256 amount = game.money;
+        uint256 amount = game.amount;
         uint256 comis = game.comision;
 
         if(game.status == GameStatus.finished) {
             if(games[_id].winner == msg.sender) {
-                game.money = 0;
+                game.amount = 0;
 
                 payable(msg.sender).transfer(amount - game.comision);
             } else {
                 revert youAreNotWinner();
             }
         } else if(game.status == GameStatus.created && block.timestamp > game.deadline ) {
-            game.money = 0;
+            game.amount = 0;
 
             payable(msg.sender).transfer(amount - game.comision);
 
