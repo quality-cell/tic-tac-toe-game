@@ -1,18 +1,11 @@
 import { expect, use } from "chai"
 import { ethers, waffle } from "hardhat"
-import { prepareERC20Tokens, prepareSigners } from "./utils/prepare"
-import { prepareTicTac } from "./utils/prepareTicTac"
-import { prepareWallet } from "./utils/prepareWallet"
-
-
-use(waffle.solidity)
+import { prepareContracts, prepareSigners } from "./utils/prepare"
 
 describe("ERC20 mock contract", function () {
     beforeEach(async function () {
         await prepareSigners(this)
-        await prepareERC20Tokens(this, this.bob, this.misha)
-        await prepareTicTac(this, this.bob)
-        await prepareWallet(this, this.bob, this.misha)
+        await prepareContracts(this, this.bob, this.misha)
     })
 
     describe("Deployment", function () {
@@ -24,26 +17,31 @@ describe("ERC20 mock contract", function () {
 
     describe("Transactions", function () {
         it("Should transfer tokens", async function () {
-            const transferAmount = ethers.utils.parseUnits("100", 6)
+            const transferAmount = ethers.utils.parseUnits("100", 3)
 
             await this.token1.connect(this.bob).approve(this.tictac.address, transferAmount)
             await this.token2.connect(this.misha).approve(this.tictac.address, transferAmount)
 
-            await this.tictac.connect(this.bob).refill(transferAmount, this.token1.address)
-            await this.tictac.connect(this.misha).refill(transferAmount, this.token2.address)
+            await this.tictac.connect(this.bob).refill(transferAmount)
+            await expect(this.tictac.connect(this.misha).refill(transferAmount)).to.be.revertedWith("ERC20: insufficient allowance")
 
             let bob = await this.tictac.connect(this.bob).getBalancePlayer()
-            let misha = await this.tictac.connect(this.misha).getBalancePlayer()
+           
 
             expect(bob).to.equal(transferAmount)
-            expect(misha).to.equal(transferAmount)
+            
+            const transferAmount1 = ethers.utils.parseUnits("100", 3)
 
+            await this.token1.connect(this.bob).transfer(this.misha.address, transferAmount)
 
-            const transferAmount1 = ethers.utils.parseUnits("100", 5)
+            await this.token1.connect(this.misha).approve(this.tictac.address, transferAmount)
+            await this.tictac.connect(this.misha).refill(transferAmount)
 
+            let misha = await this.tictac.connect(this.misha).getBalancePlayer()
 
-            await this.tictac.connect(this.bob).createGameERC20(10, transferAmount1 )
+            await this.tictac.connect(this.bob).createGameERC20(10, transferAmount1)
             await this.tictac.connect(this.misha).joinERC20(0, transferAmount1)
+
             await this.tictac.connect(this.bob).pickUpTheWinningsERC20(0)
 
             let bob1 = await this.tictac.connect(this.bob).getBalancePlayer()
@@ -54,8 +52,6 @@ describe("ERC20 mock contract", function () {
             expect(misha1).to.equal(misha
                 .sub(transferAmount1))
             
-            
-
             await this.tictac.connect(this.bob).move(0, 1, 0)
             await this.tictac.connect(this.misha).move(3, 2, 0)
             await this.tictac.connect(this.bob).move(1, 1, 0)
@@ -68,7 +64,7 @@ describe("ERC20 mock contract", function () {
 
             await this.tictac.connect(this.bob).pickUpTheWinningsERC20(0)  
 
-            const transferAmount2 = ethers.utils.parseUnits("180", 5)
+            const transferAmount2 = ethers.utils.parseUnits("180", 3)
 
             bob1 = await this.tictac.connect(this.bob).getBalancePlayer()
 
@@ -102,13 +98,12 @@ describe("ERC20 mock contract", function () {
             await expect(this.tictac.connect(this.misha).getComissionERC20()).to.be.revertedWith(
                 "Invalid address"
             )
-            expect(await this.tictac.connect(this.bob).getComissionERC20()).to.equal(ethers.utils.parseUnits("200", 4))
+            expect(await this.tictac.connect(this.bob).getComissionERC20()).to.equal(ethers.utils.parseUnits("200", 2))
 
+            await this.tictac.connect(this.bob).withdrawComissionERC20()
+            await this.wallet.refill(ethers.utils.parseUnits("200", 2), this.token1.address, this.tictac.address)
 
-            await this.tictac.connect(this.bob).withdrawComissionERC20(this.wallet.address, this.token1.address)
-            await this.wallet.refill(ethers.utils.parseUnits("200", 4), this.token1.address, this.tictac.address)
-
-            expect(await this.wallet.getBalanceERC20()).to.equal(ethers.utils.parseUnits("200", 4))
+            expect(await this.wallet.getBalanceERC20()).to.equal(ethers.utils.parseUnits("200", 2))
 
             let message = ethers.utils.solidityKeccak256(
                 [
@@ -117,14 +112,15 @@ describe("ERC20 mock contract", function () {
                     "address",
                 ],
                 [
-                    ethers.utils.parseUnits("200", 4),
+                    ethers.utils.parseUnits("200", 2),
                     2,
                     this.bob.address,
                 ]
             )
+
             let bytesArray = ethers.utils.arrayify(message);
             let realSignature = await this.bob.signMessage(bytesArray)
-            await this.wallet.connect(this.bob).approveWithdraw(ethers.utils.parseUnits("200", 4), 2, realSignature)
+            await this.wallet.connect(this.bob).approveWithdraw(ethers.utils.parseUnits("200", 2), 2, realSignature)
     
             message = ethers.utils.solidityKeccak256(
                 [
@@ -133,19 +129,20 @@ describe("ERC20 mock contract", function () {
                     "address",
                 ],
                 [
-                    ethers.utils.parseUnits("200", 4),
+                    ethers.utils.parseUnits("200", 2),
                     2,
                     this.misha.address,
                 ]
             )
+
             const bobBalance1 = await this.token1.balanceOf(this.bob.address)
 
             bytesArray = ethers.utils.arrayify(message);
             realSignature = await this.misha.signMessage(bytesArray)
-            await this.wallet.connect(this.misha).approveWithdraw(ethers.utils.parseUnits("200", 4), 2, realSignature)
-            await this.wallet.connect(this.bob).withdrawERC20(ethers.utils.parseUnits("200", 4), this.token1.address)
+            await this.wallet.connect(this.misha).approveWithdraw(ethers.utils.parseUnits("200", 2), 2, realSignature)
+            await this.wallet.connect(this.bob).withdrawERC20(ethers.utils.parseUnits("200", 2), this.token1.address)
 
-            expect(await this.token1.balanceOf(this.bob.address)).to.equal(bobBalance1.add(ethers.utils.parseUnits("200", 4)))
+            expect(await this.token1.balanceOf(this.bob.address)).to.equal(bobBalance1.add(ethers.utils.parseUnits("200", 2)))
         })
 
         it("Should fail if sender doesn’t have enough allowance", async function () {

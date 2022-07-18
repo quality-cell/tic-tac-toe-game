@@ -5,14 +5,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 /**
- * @title Tic-tac-toe game
+ * @title Tic-tac-toe game version 2.0
  * @author Anton Malko
- * @notice You can use this contract to play tic-tac-toe with your friends
- * @dev All function calls are currently implemented without side effects
+ * @notice Achievements added
  */
-contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
+contract TicTacToeGameV2 is Initializable, UUPSUpgradeable, OwnableUpgradeable{
     uint256 public id;
     uint256 public period;
     uint256 public percent;
@@ -59,6 +59,11 @@ contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 los;
     }
 
+    struct Achievement {
+        bool winner;
+        bool creator;
+    }
+
     error invalidStatus();
     error invalidAddress();
     error invalidCellOrTicTac();
@@ -69,6 +74,7 @@ contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     mapping(uint256 => Game) public games;
     mapping(address => Player) private players;
     mapping(address => uint256) private balance;
+    mapping(address => Achievement) private achievements;
 
     /**
      * @notice This event contains the data entered by the user, his address and game id
@@ -131,6 +137,19 @@ contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     event Status(
         uint256 indexed id, 
         GameStatus indexed status
+    );
+
+    /**
+     * @notice This event contains the address of the player and the status of his achievements.
+     * @dev Called in the addAchievement function
+     * @param player Address of the player
+     * @param winner Achievement that is awarded if the user has 100 wins
+     * @param creator Achievement that is awarded if the player created the game
+     */
+    event Achievements(
+        address indexed player,  
+        bool winner,
+        bool creator
     );
 
     modifier atStatus(uint256 _id, GameStatus _status) {
@@ -545,11 +564,14 @@ contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
      * @notice This function changes the commission percentage
      * @dev The function can only be called by the owner of the contract
      * @param _fee Game Commission
+     * @param _v Includes a chain identifier as specified in EIP-155.
+     * @param _r Contains bytes 0....64
+     * @param _s Contains bytes 64....128
      */
-    function comisionChang(uint256 _fee) 
+    function comisionChang(uint256 _fee, uint8 _v, bytes32 _r, bytes32 _s) 
         external 
     {
-        require(msg.sender == ownerAddress, "Invalid address");
+        require(ownerAddress == verify(hash(_fee), _v, _r, _s), "Invalid address");
         
         percent = _fee;
     }
@@ -589,7 +611,6 @@ contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /**
      * @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract. Called by
      * {upgradeTo} and {upgradeToAndCall}.
-
      */
     function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
 
@@ -604,6 +625,7 @@ contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         if ((!winVertically(_game, _tictac) || !winDiagonally(_game, _tictac) || !winHorizontally(_game, _tictac)) && 
                 (winVertically(_game, TicTac.cross) || winDiagonally(_game, TicTac.cross) || winHorizontally(_game, TicTac.cross))) {
             changeStat(_game.player2, _game.player1, _id);
+            addAchievements(_game.player2, _id);
 
             emit GameFinished(
                 _game.winner, 
@@ -612,6 +634,7 @@ contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         } else if ((!winVertically(_game, _tictac) || !winDiagonally(_game, _tictac) || !winHorizontally(_game, _tictac)) && 
                 (winVertically(_game, TicTac.zero) || winDiagonally(_game, TicTac.zero) || winHorizontally(_game, TicTac.zero))) {
             changeStat(_game.player1, _game.player2, _id);
+            addAchievements(_game.player1, _id);
 
             emit GameFinished(
                 _game.winner, 
@@ -630,6 +653,44 @@ contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
                 _id
             );
         }
+    }
+
+    /**
+     * @notice The function adds an achievement to the address if the condition is true.
+     * @param _id Id of the game
+     * @param _player Player's address
+     */
+    function addAchievements(address _player, uint256 _id) internal {
+        Achievement storage achiev = achievements[_player];
+        Player storage player = players[_player];
+        Game storage game = games[_id];
+
+        if(achiev.winner != true && player.win == 100 ) {
+            achiev.winner = true;
+        }
+
+        if(achiev.creator != true && game.player1 == _player) {
+            achiev.creator = true;
+        }
+
+        emit Achievements(
+            _player,
+            achiev.winner,
+            achiev.creator
+        );
+    }
+
+    /**
+     * @notice This function returns achievement statistics
+     * @dev Returns a structure Achievement
+     * @return All attributes of the Achievement struct
+     */
+    function getAchievement() 
+        external
+        view 
+        returns (Achievement memory) 
+    {
+        return achievements[msg.sender];
     }
 
     /**
@@ -761,5 +822,38 @@ contract TicTacToeGame is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
 
         return false;
+    }
+
+    /**
+     * @notice This function hashes the signed data
+     * @dev The data that is hashed must match the data that is signed
+     * @param _fee Game Commission
+     */
+    function hash(uint256 _fee) 
+        internal 
+        view 
+        returns (bytes32)
+    {
+        bytes32 DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,address verifyingContract)");
+        bytes32 PERMIT_TYPEHASH = keccak256("Permit(address participant,uint256 value)");
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), address(this)));
+        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, msg.sender, _fee));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+
+        return digest;
+    }
+
+    /**
+     * @notice This function verifies data that has been signed
+     * @dev This function will return the address of the person who signed the data, 
+     * if the hashed data and the data that was signed are the same, 
+     * otherwise it will return either a zero address or some other address different from the signer
+     */
+    function verify(bytes32 _hash, uint8 _v, bytes32 _r, bytes32 _s)
+        internal 
+        pure 
+        returns (address)
+    {
+        return ECDSAUpgradeable.recover(_hash, _v, _r, _s);
     }
 }

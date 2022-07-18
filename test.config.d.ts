@@ -9,12 +9,12 @@ declare module "mocha" {
         alice: SignerWithAddress
         bob: SignerWithAddress
         carol: SignerWithAddress
-        tema: SignerWithAddress
+        anton: SignerWithAddress
         misha: SignerWithAddress
 
         // CONTRACTS
         token1: ERC20Mock
         token2: ERC20Mock
         token3: ERC20Mock
-    }
+    }   
 }

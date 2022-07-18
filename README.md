@@ -1,8 +1,8 @@
 # Tic-Tac-Toe Game
 
-Etherscan: https://rinkeby.etherscan.io/address/0xB63c88436b0c9c1a7efD60c87Bd95570c768A4b3#code                                                                        
-Etherscan: https://rinkeby.etherscan.io/address/0xB23E2494B18dCed9801Cdc5F5E9f5668Ef0EFA1B#code                                                                         
-Etherscan: https://rinkeby.etherscan.io/address/0xAAA752c45383eEEEDAa09E0981C85A3Df338F0A2#code                                                                         
+Etherscan ERC20Mock: https://ropsten.etherscan.io/address/0xe3f4b958fE391A9799f93F2c0b9aD8cBdDf6cfc5#code                                                                      
+Etherscan Wallet: https://ropsten.etherscan.io/address/0x340E647F4d668e6B0B6E4424aFfe72F74FED94A9#code                                                                        
+Etherscan TicTacToeGameV2 with Proxy: https://ropsten.etherscan.io/address/0xe3A8CBC700D575C787EBf3200E5479013DC4eF96                                                                        
 Tic-tac-toe game with the ability to place bets with test.
 
 ## This project has the following features
@@ -49,7 +49,7 @@ npx hardhat pickUpTheWinningsERC20 --network ropsten --contract (address contrac
 
 npx hardhat withdraw --network ropsten --contract (address contract) --id (Id of the game) --wallet (Wallet address)
 
-npx hardhat comisionChang --network ropsten --contract (address contract) --fee (Game Commission)
+npx hardhat comisionChang --network ropsten --contract (address contract) --fee (Game Commission) --v (Chain identifier) --r(Bytes 0....64) --s(Bytes 64....128)
 
 npx hardhat approveERC --network ropsten --contract (address contract) --amount (Amount of ether to be transferred) --address (Owner's address) --mul (ten to the power)
 
@@ -80,6 +80,8 @@ npx hardhat refillWallet --network ropsten --contract (address contract) --amoun
 npx hardhat withdrawETH --network ropsten --contract (address contract) --amount (Amount of ether to be transferred) --address (Owner's address)
 
 npx hardhat getBalanceERC20 --network ropsten --contract (address contract)
+
+npx hardhat getAchievement --network ropsten --contract (address contract)
 
 
 

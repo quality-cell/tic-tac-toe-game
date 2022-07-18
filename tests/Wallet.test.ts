@@ -1,12 +1,12 @@
 import { expect } from "chai"
 import { ethers, waffle } from "hardhat"
-import { prepareWallet, prepareSigners } from "./utils/prepareWallet"
+import { prepareContracts, prepareSigners } from "./utils/prepare"
 import { increase, duration } from "./utils/time"
 
 describe("Wallet contract", function () {
     beforeEach(async function () {
         await prepareSigners(this)
-        await prepareWallet(this, this.bob, this.misha)
+        await prepareContracts(this, this.bob, this.misha)
     })
 
     it("approveWithdraw", async function () {

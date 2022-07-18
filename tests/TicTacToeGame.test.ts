@@ -1,14 +1,12 @@
 import { expect } from "chai"
 import { ethers, waffle } from "hardhat"
-import { prepareTicTac, prepareSigners } from "./utils/prepareTicTac"
+import { prepareContracts, prepareSigners } from "./utils/prepare"
 import { increase, duration } from "./utils/time"
-import { prepareWallet } from "./utils/prepareWallet"
 
 describe("tictac", function () {
     beforeEach(async function () {
         await prepareSigners(this)
-        await prepareTicTac(this, this.bob)
-        await prepareWallet(this, this.bob, this.misha)
+        await prepareContracts(this, this.bob, this.misha)
     })
 
     it("Create game", async function () {
@@ -344,7 +342,7 @@ describe("tictac", function () {
         await this.tictac.connect(this.bob).gameFinished(0, 1)
         await this.tictac.connect(this.bob).pickUpTheWinnings(0)
 
-        await this.tictac.connect(this.bob).withdraw(this.wallet.address)
+        await this.tictac.connect(this.bob).withdraw()
 
         expect(await this.wallet.getBalance()).to.equal(ethers.utils.parseEther("0.02"))
         
@@ -352,12 +350,12 @@ describe("tictac", function () {
 
         increase(duration.minutes("4320"))
 
-        await expect(this.tictac.connect(this.misha).withdraw(this.wallet.address)).to.be.revertedWith("Invalid address")
+        await expect(this.tictac.connect(this.misha).withdraw()).to.be.revertedWith("Invalid address")
         await this.tictac.connect(this.bob).pickUpTheWinnings(1)
 
-        await this.tictac.connect(this.bob).withdraw(this.wallet.address)
+        await this.tictac.connect(this.bob).withdraw()
 
-        expect(await this.wallet.getBalance()).to.equal(ethers.utils.parseEther("0.02").add(ethers.utils.parseEther("0.01")))
+        expect(await this.wallet.getBalance()).to.equal(ethers.utils.parseEther("0.02"))
 
         let message = ethers.utils.solidityKeccak256(
             [
@@ -392,7 +390,7 @@ describe("tictac", function () {
         await this.wallet.connect(this.misha).approveWithdraw(ethers.utils.parseEther("0.01"), 2, realSignature)
         await this.wallet.connect(this.misha).withdraw(ethers.utils.parseEther("0.01"), this.bob.address)
 
-        expect(await this.wallet.getBalance()).to.equal(ethers.utils.parseEther("0.02"))
+        expect(await this.wallet.getBalance()).to.equal(ethers.utils.parseEther("0.01"))
     })
 
     it("pickUpTheWinnings", async function () {
@@ -460,10 +458,8 @@ describe("tictac", function () {
         pick1 = pick1.effectiveGasPrice.mul(pick1.cumulativeGasUsed)
 
         expect(await ethers.provider.getBalance(this.bob.address)).to.equal(bobBalance
-            .sub(ethers.utils.parseEther("0.01"))
             .sub(feeCreate)
             .sub(pick1))
-
     }) 
 
     it("Test for event 'Status'", async function () {
@@ -480,9 +476,148 @@ describe("tictac", function () {
             .withArgs(0, 3)
     })
 
-    it("comisionChang", async function () {
-        await this.tictac.connect(this.bob).comisionChang(20)
+    it("Achieve", async function () {
+        await this.tictac.connect(this.bob).createGame(10, {value: ethers.utils.parseEther("0.1")})
+        await this.tictac.connect(this.misha).join(0, {value: ethers.utils.parseEther("0.1")})
 
-        await expect(this.tictac.connect(this.misha).comisionChang(20)).to.be.revertedWith("Invalid address")
+        await this.tictac.connect(this.bob).move(0, 1, 0)
+        await this.tictac.connect(this.misha).move(3, 2, 0)
+        await this.tictac.connect(this.bob).move(1, 1, 0)
+        await this.tictac.connect(this.misha).move(6, 2, 0)
+        await this.tictac.connect(this.bob).move(2, 1, 0)
+
+        await this.tictac.connect(this.bob).gameFinished(0, 1)
+
+        let player1 = await this.tictac.connect(this.bob).getAchievement()
+        let player2 = await this.tictac.connect(this.misha).getAchievement()
+
+        expect(player1.creator).to.equal(true)
+        expect(player2.creator).to.equal(false)
     })
+
+    it("Test for event 'Achievements'", async function () {
+        await this.tictac.connect(this.bob).createGame(10, {value: ethers.utils.parseEther("0.1")})
+        await this.tictac.connect(this.misha).join(0, {value: ethers.utils.parseEther("0.1")})
+
+        await this.tictac.connect(this.bob).move(0, 1, 0)
+        await this.tictac.connect(this.misha).move(3, 2, 0)
+        await this.tictac.connect(this.bob).move(1, 1, 0)
+        await this.tictac.connect(this.misha).move(6, 2, 0)
+        await this.tictac.connect(this.bob).move(2, 1, 0)
+
+        let game = await this.tictac.connect(this.bob).gameFinished(0, 1)
+
+        await expect(game)
+        .to.emit(this.tictac, "Achievements")
+        .withArgs(this.bob.address, false, true)
+    })
+
+    it("comisionChang", async function () {
+        let domain = [
+            { name: "name", type: "string" },
+            { name: "verifyingContract", type: "address" },
+        ]
+        let permit = [
+            { name: "participant", type: "address" },
+            { name: "value", type: "uint256" }
+        ]
+
+        let domainData = {
+            name: "TicTac",
+            verifyingContract: this.tictac.address,
+        }
+        let message = {
+            participant: this.bob.address,
+            value: 30
+        }
+
+        let data = JSON.stringify({
+            types: {
+            EIP712Domain: domain,
+            Permit: permit,
+            },
+            domain: domainData,
+            primaryType: "Permit",
+            message: message,
+        })
+
+        let res = await ethers.provider.send("eth_signTypedData_v4", [this.bob.address, data])
+        let signature = res.substring(2)
+        let v = parseInt(signature.substring(128, 130), 16)
+        let r = "0x" + signature.substring(0, 64)
+        let s = "0x" + signature.substring(64, 128)
+        
+        await this.tictac.connect(this.bob).comisionChang(30, v, r, s)
+
+        domain = [
+            { name: "name", type: "string" },
+            { name: "verifyingContract", type: "address" },
+        ]
+        permit = [
+            { name: "participant", type: "address" },
+            { name: "value", type: "uint256" }
+        ]
+
+        domainData = {
+            name: "TicTac",
+            verifyingContract: this.tictac.address,
+        }
+        message = {
+            participant: this.bob.address,
+            value: 30
+        }
+
+        data = JSON.stringify({
+            types: {
+            EIP712Domain: domain,
+            Permit: permit,
+            },
+            domain: domainData,
+            primaryType: "Permit",
+            message: message,
+        })
+
+        res = await ethers.provider.send("eth_signTypedData_v4", [this.misha.address, data])
+        signature = res.substring(2)
+        v = parseInt(signature.substring(128, 130), 16)
+        r = "0x" + signature.substring(0, 64)
+        s = "0x" + signature.substring(64, 128)
+
+        await expect(this.tictac.connect(this.misha).comisionChang(20, v, r, s)).to.be.revertedWith("Invalid address")
+
+        domain = [
+            { name: "name", type: "string" },
+            { name: "verifyingContract", type: "address" },
+        ]
+        permit = [
+            { name: "participant", type: "address" },
+            { name: "value", type: "uint256" }
+        ]
+
+        domainData = {
+            name: "TicTac",
+            verifyingContract: this.tictac.address,
+        }
+        message = {
+            participant: this.bob.address,
+            value: 30
+        }
+
+        data = JSON.stringify({
+            types: {
+            EIP712Domain: domain,
+            Permit: permit,
+            },
+            domain: domainData,
+            primaryType: "Permit",
+            message: message,
+        })
+
+        res = await ethers.provider.send("eth_signTypedData_v4", [this.misha.address, data])
+        signature = res.substring(2)
+        v = parseInt(signature.substring(128, 130), 16)
+        r = "0x" + signature.substring(0, 64)
+        s = "0x" + signature.substring(64, 128)
+        await expect(this.tictac.connect(this.bob).comisionChang(20, v, r, s)).to.be.revertedWith("Invalid address")
+    })   
 })
